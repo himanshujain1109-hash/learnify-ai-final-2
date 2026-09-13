@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-multipart
+python-pptx
+PyMuPDF
+moviepy==1.0.3
+pillow
+imageio-ffmpeg
+pyttsx3
+
+edge-tts
+marker-pdf
+kokoro
+soundfile
+manim

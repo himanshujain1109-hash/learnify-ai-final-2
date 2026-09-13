@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Python Virtual Environments & Wheels
+.venv/
+video-service/.venv/
+vendor_packages/
+video-service/vendor_packages/
+*.whl
+__pycache__/
+*.pyc
+video-service/__pycache__/
+
+# Output & Temp Files
+video-service/jobs/
+video-service/videos/
+*.log
+
+# Sensitive Environment Variables
+.env
+frontend/.env
+backend/.env
+!.env.example
