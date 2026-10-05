@@ -1,5 +1,4 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { Document } from 'langchain/document';
 
 // Initialize Qdrant Client (Requires a local or cloud Qdrant instance)
 // E.g., docker run -p 6333:6333 qdrant/qdrant
