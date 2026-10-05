@@ -31,6 +31,22 @@ export function setCors(res, req) {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
 }
 
+// Base URL of the optional Python video-service (OCR extraction, math solver,
+// plots). On Vercel, 127.0.0.1 is the function's own container, so unless a
+// real URL is configured we return "" and callers skip the call entirely
+// instead of waiting on a connection that can never succeed.
+export function videoServiceUrl() {
+  const configured = (
+    process.env.VIDEO_SERVICE_URL ||
+    process.env.VITE_VIDEO_API_URL ||
+    ""
+  )
+    .trim()
+    .replace(/\/+$/, "");
+  if (configured) return configured;
+  return process.env.VERCEL ? "" : "http://127.0.0.1:8000";
+}
+
 export function sendError(res, error) {
   console.error(error);
   return res.status(error.statusCode || 500).json({ message: error.message || 'Server error' });
