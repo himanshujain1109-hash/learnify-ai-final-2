@@ -1,5 +1,7 @@
 import multer from "multer";
-import pdfParse from "pdf-parse";
+// Import the library file directly: the package index runs a debug block that
+// reads a test PDF from disk, which crashes in serverless bundles.
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import mammoth from "mammoth";
 import fs from "fs/promises";
 import Document from "../../backend/models/Document.js";
@@ -13,7 +15,7 @@ import {
   createOfflineTopics,
   offlineFallbackEnabled,
 } from "../../backend/lib/offline-ai.js";
-import { sendError, setCors } from "../_utils.js";
+import { sendError, setCors, videoServiceUrl } from "../_utils.js";
 
 export const config = {
   api: {
@@ -72,25 +74,31 @@ export default async function handler(req, res) {
 
     let text;
     try {
-      // Try using the robust Python video-service for extraction first (supports OCR via marker-pdf).
-      try {
-        const formData = new FormData();
-        const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
-        formData.append("file", blob, req.file.originalname);
-        
-        const extractRes = await fetch((process.env.VITE_VIDEO_API_URL || "http://127.0.0.1:8000") + "/api/extract", {
-          method: "POST",
-          body: formData,
-          signal: AbortSignal.timeout(120000) // 2 min timeout for heavy OCR
-        });
-        if (extractRes.ok) {
-          const result = await extractRes.json();
-          if (result.text) text = normalizeExtractedText(result.text);
+      // Optionally use the Python video-service for extraction (OCR support).
+      // Skipped when no service URL is configured (e.g. plain Vercel deploy).
+      const videoBase = videoServiceUrl();
+      if (videoBase) {
+        try {
+          const formData = new FormData();
+          const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+          formData.append("file", blob, req.file.originalname);
+
+          const extractRes = await fetch(`${videoBase}/api/extract`, {
+            method: "POST",
+            body: formData,
+            signal: AbortSignal.timeout(
+              Number(process.env.VIDEO_EXTRACT_TIMEOUT_MS) || 20000
+            ),
+          });
+          if (extractRes.ok) {
+            const result = await extractRes.json();
+            if (result.text) text = normalizeExtractedText(result.text);
+          }
+        } catch (ocrError) {
+          console.warn("Python extract service unavailable, falling back to local JS extraction", ocrError.message);
         }
-      } catch (ocrError) {
-        console.warn("Python extract service unavailable, falling back to local JS extraction", ocrError);
       }
-      
+
       // Fallback to local JS extraction if Python service failed or returned empty text
       if (!text) {
         text = normalizeExtractedText(await extract(req.file));
