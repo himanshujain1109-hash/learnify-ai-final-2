@@ -13,15 +13,18 @@ import {
   classifyIntentPrompt,
   buildMathTutorPrompt
 } from "../../backend/lib/teaching-engine.js";
-import { sendError, setCors } from "../_utils.js";
+import { sendError, setCors, videoServiceUrl } from "../_utils.js";
 
 // Call the Python math solver
 async function callMathSolver(expression) {
+  const base = videoServiceUrl();
+  if (!base) return { success: false };
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/math/solve", {
+    const res = await fetch(`${base}/api/math/solve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "solve_equation", expression })
+      body: JSON.stringify({ type: "solve_equation", expression }),
+      signal: AbortSignal.timeout(8000)
     });
     return await res.json();
   } catch (err) {
@@ -32,11 +35,14 @@ async function callMathSolver(expression) {
 
 // Call the Python visual engine
 async function callVisualEngine(spec) {
+  const base = videoServiceUrl();
+  if (!base) return { success: false };
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/visual/render", {
+    const res = await fetch(`${base}/api/visual/render`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(spec)
+      body: JSON.stringify(spec),
+      signal: AbortSignal.timeout(8000)
     });
     return await res.json();
   } catch (err) {
