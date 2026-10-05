@@ -22,7 +22,11 @@ const OLLAMA_HOST = (process.env.OLLAMA_HOST || "http://127.0.0.1:11434").replac
 // deployments can use the clearer OLLAMA_MODEL name.
 const MODEL =
   process.env.OLLAMA_MODEL || process.env.LOCAL_LLM_MODEL || "qwen2.5:7b";
-const TIMEOUT_MS = Number(process.env.LOCAL_LLM_TIMEOUT_MS || 60000);
+// On Vercel a function is killed at maxDuration (60s in vercel.json), so keep the
+// LLM timeout below that to leave time for the offline fallback to respond.
+const TIMEOUT_MS = Number(
+  process.env.LOCAL_LLM_TIMEOUT_MS || (process.env.VERCEL ? 40000 : 60000)
+);
 
 async function callGemini(prompt, isJson = true) {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
@@ -90,7 +94,8 @@ async function callGroq(prompt) {
       model,
       messages: [{ role: "user", content: prompt }],
       temperature: 0.35
-    })
+    }),
+    signal: AbortSignal.timeout(40000)
   });
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
