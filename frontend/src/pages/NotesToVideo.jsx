@@ -5,8 +5,11 @@ import BackButton from "../components/BackButton";
 import AnimatedTabs from "../components/ui/AnimatedTabs";
 import BorderBeam from "../components/ui/BorderBeam";
 
+// In production there is no localhost video service, so an unset
+// VITE_VIDEO_API_URL results in a clear message instead of a failed request.
 const VIDEO_API = (
-  import.meta.env.VITE_VIDEO_API_URL || "http://localhost:8000"
+  import.meta.env.VITE_VIDEO_API_URL ||
+  (import.meta.env.DEV ? "http://localhost:8000" : "")
 ).replace(/\/+$/, "");
 const MAX_VIDEO_MB = Number(import.meta.env.VITE_MAX_VIDEO_MB || 20);
 
@@ -187,6 +190,12 @@ export default function NotesToVideo() {
       form.append("duration", duration);
       form.append("voice", voice);
       form.append("pace", pace);
+
+      if (!VIDEO_API) {
+        throw new Error(
+          "Video generation is not set up on this deployment yet (VITE_VIDEO_API_URL is missing)."
+        );
+      }
 
       const res = await fetch(`${VIDEO_API}/api/video/jobs`, {
         method: "POST",
