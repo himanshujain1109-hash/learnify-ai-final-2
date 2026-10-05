@@ -21,5 +21,9 @@
     "pdf-parse": "^1.1.1",
     "mammoth": "^1.9.1",
     "@qdrant/js-client-rest": "^1.13.0"
+  },
+  "allowScripts": {
+    "esbuild": true
   }
 }
+
