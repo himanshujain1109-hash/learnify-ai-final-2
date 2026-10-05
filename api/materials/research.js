@@ -55,7 +55,10 @@ Return ONLY valid JSON in this exact structure:
 
     let result;
     try {
-      result = await generateJSON(prompt);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("AI research request timed out")), 35000)
+      );
+      result = await Promise.race([generateJSON(prompt), timeoutPromise]);
     } catch (llmErr) {
       console.warn("[Research] LLM failed, creating fallback study notes:", llmErr.message);
       result = {

@@ -26,28 +26,43 @@ const PORT = process.env.PORT || 5000;
 // slash left in the env var is a very common cause of registration/login
 // silently failing in production with no visible error beyond "Network
 // Error" in the browser console.
-const allowedOrigins = (process.env.FRONTEND_URL || "")
-  .split(",")
-  .map((o) => o.trim().replace(/\/+$/, ""))
-  .filter(Boolean);
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("⚠️  Unhandled Rejection:", reason);
+});
 
-if (allowedOrigins.length === 0) {
-  console.warn(
-    "⚠️  FRONTEND_URL is not set — allowing all origins (*). " +
-      "Set FRONTEND_URL in your environment to your deployed frontend URL " +
-      "(e.g. https://your-app.vercel.app) to restrict this in production."
-  );
-}
+process.on("uncaughtException", (err) => {
+  console.error("⚠️  Uncaught Exception:", err);
+});
+
+const defaultDevOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5174",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+
+const allowedOrigins = [
+  ...new Set([
+    ...defaultDevOrigins,
+    ...(process.env.FRONTEND_URL || "")
+      .split(",")
+      .map((o) => o.trim().replace(/\/+$/, ""))
+      .filter(Boolean),
+  ]),
+];
 
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow non-browser requests (curl, server-to-server, health checks)
-      // which have no Origin header at all.
       if (!origin) return callback(null, true);
-      if (allowedOrigins.length === 0) return callback(null, true);
       const normalized = origin.replace(/\/+$/, "");
-      if (allowedOrigins.includes(normalized)) return callback(null, true);
+      if (allowedOrigins.includes(normalized) || allowedOrigins.includes("*")) return callback(null, true);
+      // In local dev, allow all localhost / 127.0.0.1 and local network origins
+      if (/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+|172\.\d+\.\d+\.\d+)(:\d+)?$/.test(normalized)) {
+        return callback(null, true);
+      }
       console.warn(`⚠️  Blocked CORS request from origin: ${origin}`);
       return callback(new Error("Not allowed by CORS"));
     },

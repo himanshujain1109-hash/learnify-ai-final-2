@@ -1,0 +1,43 @@
+services:
+  # 1. Learnify Video Generator Service (FastAPI + FFmpeg + Edge-TTS)
+  - type: web
+    name: learnify-video-service
+    env: docker
+    dockerfilePath: video-service/Dockerfile
+    dockerContext: video-service
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: FRONTEND_URL
+        sync: false
+      - key: TTS_PROVIDER
+        value: edge-tts
+      - key: MAX_FILE_MB
+        value: "25"
+
+  # 2. (Optional) Learnify Node.js Express Backend
+  # Deploy this if you prefer a persistent Express server over Vercel serverless.
+  - type: web
+    name: learnify-backend
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: node backend/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: ENABLE_OFFLINE_FALLBACK
+        value: "true"
+      - key: MAX_UPLOAD_MB
+        value: "10"

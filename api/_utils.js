@@ -15,6 +15,12 @@ function resolveOrigin(req) {
 
   if (configured.length === 0) return "*";
   if (requestOrigin && configured.includes(requestOrigin)) return requestOrigin;
+  
+  // Allow all localhost / 127.0.0.1 origins for local dev
+  if (requestOrigin && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(requestOrigin)) {
+    return requestOrigin;
+  }
+  
   return configured[0];
 }
 

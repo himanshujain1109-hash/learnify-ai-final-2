@@ -1,7 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { uploadMaterial, researchMaterial } from "../services/materials";
 import BackButton from "../components/BackButton";
+import AnimatedTabs from "../components/ui/AnimatedTabs";
+import BorderBeam from "../components/ui/BorderBeam";
+import ShimmerButton from "../components/ui/ShimmerButton";
+import {
+  UploadCloud,
+  FileText,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  ArrowRight,
+  BookOpen,
+} from "lucide-react";
 
 export default function Upload() {
   const [activeTab, setActiveTab] = useState("file"); // "file" | "ai"
@@ -12,19 +26,43 @@ export default function Upload() {
   const [level, setLevel] = useState("College");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const navigate = useNavigate();
 
-  const handleFileUpload = async (e) => {
-    e.preventDefault();
+  const tabs = [
+    { id: "file", label: "Upload Documents", icon: <FileText size={15} /> },
+    { id: "ai", label: "AI Autonomous Research", icon: <Sparkles size={15} /> },
+  ];
 
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     if (!file) {
-      setError("Choose a PDF, DOCX or TXT file first.");
+      setError("Please choose a PDF, DOCX or TXT file first.");
       return;
     }
 
     const maxMb = Number(import.meta.env.VITE_MAX_UPLOAD_MB || 4);
     if (file.size > maxMb * 1024 * 1024) {
-      setError(`This file is too large. The maximum upload size is ${maxMb} MB.`);
+      setError(`This file exceeds the limit of ${maxMb} MB.`);
       return;
     }
 
@@ -35,7 +73,7 @@ export default function Upload() {
       const data = await uploadMaterial(file, title);
       const materialId = data?.material?._id;
       if (!materialId) {
-        throw new Error("Upload succeeded, but the server did not return a material ID.");
+        throw new Error("Upload succeeded, but no material ID was returned.");
       }
       navigate(`/materials/${encodeURIComponent(materialId)}`, { replace: true });
     } catch (err) {
@@ -51,10 +89,9 @@ export default function Upload() {
   };
 
   const handleTopicResearch = async (e) => {
-    e.preventDefault();
-
+    if (e && e.preventDefault) e.preventDefault();
     if (!topicPrompt.trim()) {
-      setError("Please enter a topic or concept name.");
+      setError("Please enter a concept or topic name to research (or click one of the suggestions below).");
       return;
     }
 
@@ -75,9 +112,10 @@ export default function Upload() {
       navigate(`/materials/${encodeURIComponent(materialId)}`, { replace: true });
     } catch (err) {
       setError(
+        err.friendlyMessage ||
         err.response?.data?.message ||
         err.message ||
-        "AI Research failed. Please check backend status."
+        "AI Research failed. Please verify backend status."
       );
     } finally {
       setLoading(false);
@@ -85,145 +123,255 @@ export default function Upload() {
   };
 
   return (
-    <div>
+    <div style={{ maxWidth: 680, margin: "0 auto", paddingBottom: "70px" }}>
       <BackButton to="/dashboard" label="Back to Dashboard" />
 
-      <div className="form">
-        <span className="eyebrow">STUDY HUB</span>
-        <h1>Create Study Material</h1>
-        <p className="form-intro">
-          Upload your notes/PDF or let AI autonomously research and generate comprehensive lessons on any topic.
-        </p>
-
-        {/* Mode Switcher Tabs */}
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            background: "rgba(255, 255, 255, 0.05)",
-            padding: 6,
-            borderRadius: 14,
-            marginBottom: 24,
-            border: "1px solid rgba(255, 255, 255, 0.1)",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => { setActiveTab("file"); setError(""); }}
-            style={{
-              flex: 1,
-              padding: "10px 14px",
-              borderRadius: 10,
-              fontSize: "0.92rem",
-              fontWeight: 600,
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              background: activeTab === "file" ? "linear-gradient(135deg, #6d5dfc, #8577fc)" : "transparent",
-              color: activeTab === "file" ? "#ffffff" : "#a19db5",
-              boxShadow: activeTab === "file" ? "0 4px 12px rgba(109, 93, 252, 0.3)" : "none",
-            }}
-          >
-            📄 Upload Notes (PDF / DOCX / TXT)
-          </button>
-          <button
-            type="button"
-            onClick={() => { setActiveTab("ai"); setError(""); }}
-            style={{
-              flex: 1,
-              padding: "10px 14px",
-              borderRadius: 10,
-              fontSize: "0.92rem",
-              fontWeight: 600,
-              border: "none",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              background: activeTab === "ai" ? "linear-gradient(135deg, #6d5dfc, #00e1ff)" : "transparent",
-              color: activeTab === "ai" ? "#ffffff" : "#a19db5",
-              boxShadow: activeTab === "ai" ? "0 4px 12px rgba(0, 225, 255, 0.25)" : "none",
-            }}
-          >
-            ✦ AI Autonomous Topic Research
-          </button>
+      <div
+        className="card-3d"
+        style={{
+          background: "#ffffff",
+          border: "1px solid var(--line)",
+          borderRadius: "24px",
+          padding: "36px",
+          boxShadow: "0 20px 60px rgba(23, 20, 45, 0.05)",
+          position: "relative",
+        }}
+      >
+        <div style={{ marginBottom: "24px" }}>
+          <span className="bento-tag" style={{ marginBottom: "10px" }}>
+            <Sparkles size={12} /> STUDY HUB INGESTION
+          </span>
+          <h1 style={{ fontSize: "32px", letterSpacing: "-1px", margin: "4px 0 8px" }}>
+            Create Study Material
+          </h1>
+          <p style={{ color: "var(--muted)", fontSize: "15px", lineHeight: 1.6, margin: 0 }}>
+            Upload existing class notes and PDFs, or let our autonomous agent research any subject from first principles.
+          </p>
         </div>
 
-        {error && <div className="error" style={{ marginBottom: 16 }}>{error}</div>}
+        {/* Mode Switcher Tabs */}
+        <div style={{ marginBottom: "26px" }}>
+          <AnimatedTabs
+            tabs={tabs}
+            activeTab={activeTab}
+            onChange={(tab) => {
+              setActiveTab(tab);
+              setError("");
+            }}
+            layoutId="uploadModeTabs"
+            style={{ width: "100%", justifyContent: "center", padding: "6px" }}
+          />
+        </div>
+
+        {error && (
+          <div
+            className="error"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "20px",
+            }}
+          >
+            <AlertCircle size={18} />
+            <span>{error}</span>
+          </div>
+        )}
 
         {/* Tab 1: File Upload */}
         {activeTab === "file" ? (
           <form onSubmit={handleFileUpload}>
-            <div className="field">
-              <label>Material title (Optional)</label>
+            <div className="modern-field">
+              <label>Material Title (Optional)</label>
               <input
+                className="modern-input"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Data Structures — Unit 1"
+                placeholder="e.g., Operating Systems — Virtual Memory"
               />
             </div>
 
-            <div className="field">
-              <label>File</label>
-              <div className="upload-drop">
-                <input
-                  type="file"
-                  accept=".pdf,.docx,.txt,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  required
-                />
-                <p className="muted">
-                  PDF, DOCX or TXT · max {import.meta.env.VITE_MAX_UPLOAD_MB || 4} MB
-                </p>
-              </div>
+            {/* Drag & Drop File Zone */}
+            <div
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              style={{
+                position: "relative",
+                border: `2px dashed ${dragActive ? "var(--purple)" : "#d7d2eb"}`,
+                borderRadius: "18px",
+                background: dragActive ? "rgba(109, 93, 252, 0.04)" : "#faf9ff",
+                padding: "36px 20px",
+                textAlign: "center",
+                transition: "all 0.2s ease",
+                marginBottom: "24px",
+              }}
+            >
+              {dragActive && (
+                <BorderBeam size={220} duration={6} colorFrom="#6d5dfc" colorTo="#00e1ff" />
+              )}
+              <input
+                id="file-input-field"
+                type="file"
+                accept=".pdf,.docx,.txt"
+                onChange={(e) => setFile(e.target.files[0] || null)}
+                style={{ display: "none" }}
+              />
+              <label htmlFor="file-input-field" style={{ cursor: "pointer", display: "block" }}>
+                <div
+                  style={{
+                    width: 54,
+                    height: 54,
+                    borderRadius: 16,
+                    background: file ? "#e8f7ec" : "var(--soft)",
+                    color: file ? "#10b981" : "var(--purple)",
+                    display: "grid",
+                    placeItems: "center",
+                    margin: "0 auto 12px",
+                  }}
+                >
+                  {file ? <CheckCircle2 size={26} /> : <UploadCloud size={26} />}
+                </div>
+
+                <strong style={{ display: "block", fontSize: "16px", color: "var(--ink)", marginBottom: 4 }}>
+                  {file ? file.name : "Drag & drop your notes or click to browse"}
+                </strong>
+                <span style={{ fontSize: "12.5px", color: "var(--muted)" }}>
+                  {file
+                    ? `${(file.size / (1024 * 1024)).toFixed(2)} MB · Ready to process`
+                    : "Supports PDF, DOCX, and TXT files (up to 4 MB)"}
+                </span>
+              </label>
             </div>
 
-            <button className="btn btn-primary" disabled={loading} style={{ width: "100%", marginTop: 12 }}>
-              {loading ? "Reading & Analyzing PDF..." : "Upload & Deep-Analyze PDF →"}
-            </button>
+            <ShimmerButton
+              type="submit"
+              disabled={loading}
+              style={{ width: "100%", padding: "14px", fontSize: "15px" }}
+            >
+              {loading ? "Analyzing Document & Extracting Topics..." : "Process Study Material →"}
+            </ShimmerButton>
           </form>
         ) : (
-          /* Tab 2: AI Topic Generator */
+          /* Tab 2: AI Autonomous Topic Research */
           <form onSubmit={handleTopicResearch}>
-            <div className="field">
-              <label>Topic or Subject to Research</label>
+            <div className="modern-field">
+              <label>Topic or Subject Concept</label>
               <input
+                className="modern-input"
                 value={topicPrompt}
-                onChange={(e) => setTopicPrompt(e.target.value)}
-                placeholder="e.g. Binary Search Trees & AVL Balancing, Quantum Computing Basics, or French Revolution..."
-                required
+                onChange={(e) => {
+                  setTopicPrompt(e.target.value);
+                  if (error) setError("");
+                }}
+                placeholder="e.g., Dijkstra's Shortest Path Algorithm, Photosynthesis, Bayesian Networks"
               />
+              <span style={{ fontSize: "11.5px", color: "var(--muted)", marginTop: 4, display: "block" }}>
+                AI will research this topic, draft comprehensive curriculum modules, and format lessons.
+              </span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                <span style={{ fontSize: "12px", color: "var(--muted)", alignSelf: "center", marginRight: 2 }}>
+                  Try:
+                </span>
+                {[
+                  "Operating Systems — Virtual Memory",
+                  "Dijkstra's Shortest Path",
+                  "Statistics & Probability Distributions",
+                  "Machine Learning Foundations",
+                  "Photosynthesis & Calvin Cycle",
+                ].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      setTopicPrompt(s);
+                      setError("");
+                    }}
+                    style={{
+                      background: "rgba(109, 93, 252, 0.08)",
+                      border: "1px solid rgba(109, 93, 252, 0.2)",
+                      borderRadius: "8px",
+                      padding: "4px 9px",
+                      fontSize: "11.5px",
+                      fontWeight: 500,
+                      color: "var(--purple)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>Language</label>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff" }}
-                >
-                  <option value="Hinglish" style={{ background: "#1c2145" }}>Hinglish</option>
-                  <option value="English" style={{ background: "#1c2145" }}>English</option>
-                  <option value="Hindi" style={{ background: "#1c2145" }}>Hindi</option>
-                </select>
-              </div>
-
-              <div className="field" style={{ marginBottom: 0 }}>
-                <label>Academic Level</label>
-                <select
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff" }}
-                >
-                  <option value="Beginner" style={{ background: "#1c2145" }}>Beginner</option>
-                  <option value="College" style={{ background: "#1c2145" }}>College</option>
-                  <option value="Advanced" style={{ background: "#1c2145" }}>Advanced</option>
-                </select>
+            {/* Level Selector */}
+            <div className="modern-field">
+              <label>Academic Level</label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {["High School", "College", "Competitive Exams", "Advanced Research"].map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => setLevel(l)}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "10px",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      border: `1.5px solid ${level === l ? "var(--purple)" : "var(--line)"}`,
+                      background: level === l ? "rgba(109, 93, 252, 0.1)" : "#fff",
+                      color: level === l ? "var(--purple)" : "var(--muted)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {l}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <button className="btn btn-primary" disabled={loading} style={{ width: "100%", marginTop: 12 }}>
-              {loading ? "AI is Researching & Generating Notes..." : "✦ Generate Complete Study Material & Lessons →"}
-            </button>
+            {/* Language Selector */}
+            <div className="modern-field">
+              <label>Explanation Tone & Language</label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {["Hinglish", "English", "Hindi"].map((lang) => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setLanguage(lang)}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "10px",
+                      fontSize: "12.5px",
+                      fontWeight: 600,
+                      border: `1.5px solid ${language === lang ? "var(--purple)" : "var(--line)"}`,
+                      background: language === lang ? "rgba(109, 93, 252, 0.1)" : "#fff",
+                      color: language === lang ? "var(--purple)" : "var(--muted)",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {lang === "Hinglish" ? "Hinglish (Natural Student Style)" : lang}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <ShimmerButton
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "14px",
+                fontSize: "15px",
+                background: "linear-gradient(135deg, #6d5dfc 0%, #00e1ff 100%)",
+              }}
+            >
+              {loading ? "Autonomous AI Research in progress..." : "✦ Autonomous AI Research & Synthesize"}
+            </ShimmerButton>
           </form>
         )}
       </div>

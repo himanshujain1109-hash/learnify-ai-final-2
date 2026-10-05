@@ -1,0 +1,34 @@
+[
+  {
+    "question": "Solve 2x + 5 = 17",
+    "subject": "Mathematics",
+    "difficulty": "Easy",
+    "ideal_reasoning": [
+      "Identify the goal: isolate x.",
+      "Subtract 5 from both sides: 2x = 12.",
+      "Divide by 2: x = 6.",
+      "Verify by substituting x=6 into 2x+5: 2(6)+5 = 12+5 = 17. Verified."
+    ],
+    "ideal_final_answer": "x = 6",
+    "required_formulas": ["Algebraic manipulation"],
+    "common_mistakes": ["Adding 5 instead of subtracting 5 from the right side."]
+  },
+  {
+    "question": "Differentiate y = x^2 + 3x + 5",
+    "subject": "Mathematics",
+    "difficulty": "Medium",
+    "ideal_reasoning": [
+      "Use the power rule: d/dx(x^n) = n*x^(n-1).",
+      "Derivative of x^2 is 2x.",
+      "Derivative of 3x is 3.",
+      "Derivative of a constant 5 is 0.",
+      "Combine: 2x + 3."
+    ],
+    "ideal_final_answer": "2x + 3",
+    "required_formulas": ["Power Rule: d/dx(x^n) = n*x^(n-1)", "Constant Rule: d/dx(c) = 0"],
+    "visual_requirements": {
+      "type": "function_plot",
+      "data": { "equation": "x**2 + 3*x + 5" }
+    }
+  }
+]

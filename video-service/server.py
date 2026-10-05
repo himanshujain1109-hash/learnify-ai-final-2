@@ -5,11 +5,13 @@ import asyncio
 from pathlib import Path
 from threading import Thread
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from main_pipeline import run_pipeline
+import math_solver
+import visual_engine
 
 # --------------------------------------------------
 # WINDOWS ASYNCIO CONNECTION RESET SUPPRESSION
@@ -69,6 +71,7 @@ if not allowed_origins:
     allowed_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://172.25.190.138:5173"
     ]
 
 app.add_middleware(
@@ -211,6 +214,52 @@ def health():
         "status": "ok",
         "service": "learnify-notes-to-video",
     }
+
+
+# --------------------------------------------------
+# MATH AND VISUAL ENGINES
+# --------------------------------------------------
+
+@app.post("/api/math/solve")
+async def solve_math_endpoint(request: Request):
+    try:
+        data = await request.json()
+        problem_type = data.get("type", "solve_equation")
+        expression = data.get("expression")
+        variables = data.get("variables")
+        
+        if not expression:
+            raise HTTPException(status_code=400, detail="Expression is required.")
+            
+        result = math_solver.solve_math(problem_type, expression, variables)
+        return result
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/math/verify")
+async def verify_math_endpoint(request: Request):
+    try:
+        data = await request.json()
+        expression = data.get("expression")
+        proposed_answer = data.get("proposed_answer")
+        variables = data.get("variables")
+        
+        if not expression or not proposed_answer:
+            raise HTTPException(status_code=400, detail="Expression and proposed_answer required.")
+            
+        result = math_solver.verify_math(expression, proposed_answer, variables)
+        return result
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/visual/render")
+async def render_visual_endpoint(request: Request):
+    try:
+        data = await request.json()
+        result = visual_engine.generate_visual(data)
+        return result
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 # --------------------------------------------------

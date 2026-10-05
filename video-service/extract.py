@@ -21,6 +21,20 @@ def _clean_slide_text(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+_ocr_engine = None
+
+def _get_ocr_engine():
+    global _ocr_engine
+    if _ocr_engine is None:
+        try:
+            from rapidocr_onnxruntime import RapidOCR
+            _ocr_engine = RapidOCR()
+        except Exception as e:
+            print(f"[extract] Could not initialize RapidOCR: {e}")
+            _ocr_engine = False
+    return _ocr_engine if _ocr_engine is not False else None
+
+
 def extract_document(path: str, output_slides_dir: str = None):
     """Return a list of slide/page dictionaries from PPTX, PDF, or TXT, and optionally save slide images."""
     p = Path(path)
@@ -51,24 +65,52 @@ def extract_document(path: str, output_slides_dir: str = None):
     if suffix == ".pdf":
         doc = fitz.open(path)
         pages = []
+        ocr_engine = _get_ocr_engine()
+        ocr_count = 0
+        max_ocr_pages = 25  # Limit OCR to top 25 pages for speed while ensuring high syllabus depth
+
         for i, page in enumerate(doc, 1):
             raw_text = page.get_text("text").strip()
+
+            # Scanned or image-based slide fallback to OCR
+            if len(raw_text) < 15 and ocr_engine and ocr_count < max_ocr_pages:
+                try:
+                    pix = page.get_pixmap(dpi=150)
+                    ocr_res, _ = ocr_engine(pix.tobytes("png"))
+                    if ocr_res:
+                        ocr_text = " ".join([line[1] for line in ocr_res]).strip()
+                        if ocr_text:
+                            raw_text = ocr_text
+                            ocr_count += 1
+                except Exception as ocr_err:
+                    print(f"[extract] OCR error on page {i}: {ocr_err}")
+
             clean_content = _clean_slide_text(raw_text)
             image_path = None
-            if slides_dir:
-                slide_file = slides_dir / f"slide_{i}.png"
+            has_diagram = False
+
+            # Check for authentic visual diagrams (raster images or vector drawings)
+            images = page.get_images(full=True)
+            drawings = page.get_drawings()
+            # If the page has images or non-trivial vector drawings, it likely contains a diagram
+            if len(images) > 0 or len(drawings) >= 6:
+                has_diagram = True
+
+            if slides_dir and has_diagram:
+                slide_file = slides_dir / f"diagram_{i}.png"
                 try:
                     pix = page.get_pixmap(dpi=150)
                     pix.save(str(slide_file))
                     image_path = str(slide_file)
                 except Exception as img_err:
-                    print(f"[extract] Could not save slide image for page {i}: {img_err}")
+                    print(f"[extract] Could not save diagram image for page {i}: {img_err}")
 
             pages.append({
                 "number": i,
                 "text": clean_content or raw_text,
                 "raw_text": raw_text,
-                "image_path": image_path
+                "image_path": image_path,
+                "has_diagram": has_diagram
             })
         doc.close()
         return pages

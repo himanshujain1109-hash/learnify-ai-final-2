@@ -1,0 +1,5 @@
+# Optional advanced ML components (Requires PyTorch and system C-libraries like libcairo2-dev)
+marker-pdf
+kokoro
+soundfile
+manim

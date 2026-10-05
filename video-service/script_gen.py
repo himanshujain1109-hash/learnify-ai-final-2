@@ -288,11 +288,11 @@ def _clean_text(text):
 
 def _fallback(text, total_slides=1):
     # Extract actual conceptual words, ignoring metadata
-    clean = re.sub(r"\b(nptel|iit|prof\.|module|lecture|slide|copyright)\b.*", "", text, flags=re.I)
+    clean = re.sub(r"\b(nptel|iit|prof\.|module|lecture|slide|copyright|coursera|dept)\b.*", "", text, flags=re.I)
     words = [w for w in re.findall(r"[A-Za-z][A-Za-z0-9'-]{2,}", clean) if len(w) > 3]
     topic = " ".join(words[:4]).title() if words else "Core Subject Overview"
 
-    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if len(s.strip()) > 30]
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if len(s.strip()) > 25]
     if not sentences:
         sentences = [
             f"Let's explore the fundamental principles of {topic}.",
@@ -300,54 +300,185 @@ def _fallback(text, total_slides=1):
             f"Understanding these key relationships allows us to master the topic effortlessly."
         ]
 
-    titles = [
-        "Core Intuition & Big Picture",
-        "Key Architectural Principles",
-        "Step-by-Step Mechanism",
-        "Worked Real-World Application",
-        "Concept Checkpoint & Quiz",
-        "Mastery Summary & Takeaways"
-    ]
+    s1 = sentences[0] if len(sentences) > 0 else f"{topic} defines the foundation of this domain."
+    s2 = sentences[1] if len(sentences) > 1 else "The core mechanism processes inputs through structured stages."
+    s3 = sentences[2] if len(sentences) > 2 else "Performance converges toward optimal stability under these constraints."
 
-    scenes = []
-    for i, title in enumerate(titles):
-        slide_idx = min(i + 1, total_slides) if total_slides > 0 else 1
-        s_text = sentences[i % len(sentences)]
-        scenes.append({
-            "sceneNumber": i + 1,
-            "sourceSlide": slide_idx,
-            "slideType": "quiz" if i == 4 else "standard",
-            "title": title,
-            "narration": f"In this section, we examine {title.lower()}. {s_text} Let's break down how this works step-by-step on the board.",
+    scenes = [
+        {
+            "sceneNumber": 1,
+            "slideType": "definition-unpack",
+            "title": f"Core Intuition & Definition: {topic}",
+            "narration": f"Welcome! Today we are exploring {topic}. On the smartboard, notice the formal definition from your study material: {s1[:120]}. But what does this actually mean in plain terms? Let's unpack the intuition together.",
             "keyPoints": [
-                f"Core foundation: {s_text[:70]}...",
-                f"Practical takeaway for {topic}",
-                "Key exam revision principle"
+                f"Formal Concept: {s1[:65]}...",
+                "Plain Intuition: Translating academic theory into mental models",
+                "Foundation for subsequent technical mechanisms"
             ],
             "visual": {
-                "type": "concept-map" if i in (0, 3) else "flowchart" if i == 1 else "comparison" if i == 2 else "none",
-                "title": f"{topic} Breakdown",
+                "type": "definition-unpack",
+                "title": f"Unpacking {topic}",
                 "data": {
-                    "nodes": [
-                        {"id": "1", "label": "Foundation"},
-                        {"id": "2", "label": "Processing"},
-                        {"id": "3", "label": "Output"}
-                    ],
-                    "edges": [{"from": "1", "to": "2"}, {"from": "2", "to": "3"}]
+                    "term": topic,
+                    "formalDefinition": s1[:180],
+                    "plainMeaning": f"In simple terms, this establishes how {topic} operates systematically to solve real-world problems.",
+                    "analogy": "Think of it like a smart navigation system that continuously recalculates the most efficient route.",
+                    "keyMechanisms": ["Foundation Principle", "Systematic Transformation", "Verified Outcome"]
                 }
             },
+            "visualBeats": [
+                {"beat": 1, "fraction": 0.35, "focus": "definition", "teacherPose": "explaining"},
+                {"beat": 2, "fraction": 0.75, "focus": "plainMeaning", "teacherPose": "pointing"},
+                {"beat": 3, "fraction": 1.00, "focus": "analogy", "teacherPose": "pointing"}
+            ]
+        },
+        {
+            "sceneNumber": 2,
+            "slideType": "algorithm-trace",
+            "title": "Step-by-Step Operational Mechanism",
+            "narration": f"Now, let's look at how this process executes step-by-step. On the board, follow the active pointer across our state sequence. Notice how in Step 1 we initialize our inputs, in Step 2 we execute the primary transformation, and in Step 3 we finalize the validated result.",
+            "keyPoints": [
+                "Step 1: Input initialization and validation",
+                "Step 2: Intermediate state processing and state transformation",
+                "Step 3: Termination and verified output state"
+            ],
+            "visual": {
+                "type": "algorithm-trace",
+                "title": f"{topic} Execution Pipeline",
+                "data": {
+                    "algorithmName": f"{topic} State Progression",
+                    "timeComplexity": "O(n)",
+                    "steps": [
+                        {"step": 1, "label": "Initialize State", "action": "Parse raw inputs", "active": 0},
+                        {"step": 2, "label": "Transform Data", "action": "Apply core rule", "active": 1},
+                        {"step": 3, "label": "Evaluate Boundary", "action": "Validate criteria", "active": 2},
+                        {"step": 4, "label": "Optimal Output", "action": "Finalize result", "active": 3}
+                    ]
+                }
+            },
+            "visualBeats": [
+                {"beat": 1, "fraction": 0.30, "focus": "step1", "teacherPose": "explaining"},
+                {"beat": 2, "fraction": 0.65, "focus": "step2", "teacherPose": "pointing"},
+                {"beat": 3, "fraction": 1.00, "focus": "step3", "teacherPose": "pointing"}
+            ]
+        },
+        {
+            "sceneNumber": 3,
+            "slideType": "dynamic-graph",
+            "title": "Empirical Dynamics & Convergence Curve",
+            "narration": f"Let's look at the behavior on this dynamic graph. As our input parameter increases along the horizontal axis, observe how the performance metric responds. Notice the curve rising steadily, then stabilizing as it approaches the optimal threshold point highlighted in cyan.",
+            "keyPoints": [
+                "Horizontal Axis: Input scale and iteration progression",
+                "Vertical Axis: Measured efficiency and convergence rate",
+                "Notice the inflection point where diminishing returns begin"
+            ],
+            "visual": {
+                "type": "dynamic-graph",
+                "title": f"{topic} Response Curve",
+                "data": {
+                    "xAxis": "Training Iterations / Input Scale (x)",
+                    "yAxis": "Efficiency & Accuracy Metric (y)",
+                    "curveType": "sigmoid",
+                    "thresholdLabel": "Optimal Convergence Frontier",
+                    "thresholdValue": 0.85
+                }
+            },
+            "visualBeats": [
+                {"beat": 1, "fraction": 0.30, "focus": "axes", "teacherPose": "explaining"},
+                {"beat": 2, "fraction": 0.70, "focus": "curve_tracer", "teacherPose": "pointing"},
+                {"beat": 3, "fraction": 1.00, "focus": "threshold", "teacherPose": "pointing"}
+            ]
+        },
+        {
+            "sceneNumber": 4,
+            "slideType": "formula-derivation",
+            "title": "Mathematical Formulation & Symbol Breakdown",
+            "narration": f"Here is the mathematical formulation that governs {topic}. Don't be intimidated by the symbols—look at how each component maps directly to our intuition. We have the primary objective on the left, weighted by our scaling factor, balancing accuracy against computational complexity.",
+            "keyPoints": [
+                "Objective Term: Primary target metric",
+                "Scaling Factor: Regulates sensitivity and learning rate",
+                "Regularization: Prevents overfitting and maintains stability"
+            ],
+            "visual": {
+                "type": "formula-derivation",
+                "title": f"Governing Equation for {topic}",
+                "data": {
+                    "formula": "J(\\theta) = \\frac{1}{2m} \\sum_{i=1}^m (h_\\theta(x^{(i)}) - y^{(i)})^2 + \\lambda \\Omega(\\theta)",
+                    "variables": [
+                        {"symbol": "J(θ)", "name": "Objective Function", "meaning": "Total cost or loss we aim to minimize"},
+                        {"symbol": "h_θ(x)", "name": "Hypothesis Model", "meaning": "Predicted output given feature inputs"},
+                        {"symbol": "y", "name": "Ground Truth", "meaning": "Target factual label from dataset"},
+                        {"symbol": "λ Ω(θ)", "name": "Regularization Penalty", "meaning": "Prevents complex over-fitting"}
+                    ]
+                }
+            },
+            "visualBeats": [
+                {"beat": 1, "fraction": 0.35, "focus": "formula_main", "teacherPose": "explaining"},
+                {"beat": 2, "fraction": 0.70, "focus": "variables", "teacherPose": "pointing"},
+                {"beat": 3, "fraction": 1.00, "focus": "derivation", "teacherPose": "pointing"}
+            ]
+        },
+        {
+            "sceneNumber": 5,
+            "slideType": "comparison",
+            "title": "Strategic Architectural Comparison",
+            "narration": f"To master {topic}, we must understand the trade-offs. On the smartboard, examine this comparison matrix between the standard baseline approach and our optimized method. Notice how the optimized method delivers superior throughput while maintaining minimal overhead.",
+            "keyPoints": [
+                "Baseline Method: Simpler to implement but scales quadratically",
+                "Optimized Architecture: High throughput with bounded memory",
+                "Strategic Rule: Choose based on data volume and latency constraints"
+            ],
+            "visual": {
+                "type": "comparison-matrix",
+                "title": f"{topic} Trade-off Matrix",
+                "data": {
+                    "columns": ["Baseline Paradigm", f"Optimized {topic}"],
+                    "rows": [
+                        {"criterion": "Operational Complexity", "valA": "High Overhead / Slower", "valB": "Streamlined / Fast", "highlight": "B"},
+                        {"criterion": "Resource Consumption", "valA": "Unbounded Memory", "valB": "Bounded Cache", "highlight": "B"},
+                        {"criterion": "Robustness to Noise", "valA": "Sensitive to Perturbations", "valB": "Adaptive & Resilient", "highlight": "B"},
+                        {"criterion": "Ideal Use Case", "valA": "Small-scale prototypes", "valB": "Production deployment", "highlight": "B"}
+                    ]
+                }
+            },
+            "visualBeats": [
+                {"beat": 1, "fraction": 0.30, "focus": "colA", "teacherPose": "explaining"},
+                {"beat": 2, "fraction": 0.65, "focus": "colB", "teacherPose": "pointing"},
+                {"beat": 3, "fraction": 1.00, "focus": "summary_row", "teacherPose": "pointing"}
+            ]
+        },
+        {
+            "sceneNumber": 6,
+            "slideType": "quiz",
+            "title": "Checkpoint: Test Your Understanding",
+            "narration": f"Time for a quick checkpoint! Look at the question on the board. What is the key advantage of using {topic} according to our lesson? Take a moment to think before we reveal the answer.",
+            "keyPoints": [
+                "Exam takeaway: Connect the mathematical rule to the empirical graph",
+                "Avoid common trap: Confusing correlation with causal mechanism"
+            ],
+            "visual": {
+                "type": "checkpoint",
+                "title": f"Mastery Checkpoint: {topic}",
+                "data": {}
+            },
             "quiz": {
-                "question": f"What is the central takeaway regarding {topic}?",
+                "question": f"What is the primary operational advantage of {topic}?",
                 "options": [
-                    f"Understanding {topic} is based on systematic principles.",
-                    "The material contains no structured mechanisms.",
-                    "This concept is independent of the study guide.",
+                    f"It provides structured, scalable convergence with bounded resource overhead.",
+                    "It eliminates the need for mathematical validation entirely.",
+                    "It works independently of any study material principles.",
                     "None of the above."
                 ],
                 "answerIndex": 0,
-                "explanation": f"This reflects the core principle of {topic}."
-            }
-        })
+                "explanation": f"Understanding {topic} is based on systematic principles with verified operational efficiency."
+            },
+            "visualBeats": [
+                {"beat": 1, "fraction": 0.40, "focus": "question", "teacherPose": "checkpoint"},
+                {"beat": 2, "fraction": 0.75, "focus": "options", "teacherPose": "checkpoint"},
+                {"beat": 3, "fraction": 1.00, "focus": "answer", "teacherPose": "pointing"}
+            ]
+        }
+    ]
 
     return scenes
 
@@ -365,23 +496,35 @@ def generate_curriculum(full_text: str, options=None, total_slides=1):
     # Condense document text (take representative parts up to 25,000 chars)
     source = clean[:25000]
 
-    prompt = f"""You are Learnify's 3D MASTER PROFESSOR & STORYTELLER.
-You stand beside a digital classroom smartboard, teaching students like 3Blue1Brown and Khan Academy meets a brilliant Indian mentor.
+    prompt = f"""You are Learnify's 3D MASTER AI PROFESSOR & EDUCATOR.
+Your goal is NOT to convert this document into a slideshow or read text aloud.
+Your goal is to build a high-yield, step-by-step TEACHING MASTERCLASS based on this material, inspired by the best educators (3Blue1Brown, Khan Academy, Veritasium).
 
-Total slides available in original document: {total_slides}.
-Target Language: {language}. Audience: {level}. Presentation Style: {style} (Enthusiastic, clear, pedagogical).
+Total pages in source document: {total_slides}.
+Target Language: {language}. Student Level: {level}. Presentation Style: {style} (Enthusiastic, clear, pedagogical).
 
-CRITICAL TEACHING PRINCIPLES:
-1. NEVER READ RAW SLIDE TITLES OR HEADERS (Do NOT say things like "Sudeshna Sarkar Kharagpur Module 1"). Explain the actual SCIENCE and CONCEPTS in your own engaging words!
-2. HOOK & INTUITION FIRST: Scene 1 must start with an engaging hook or relatable real-world dilemma ("Ever wondered how...", "Imagine you have to...").
-3. CONVERSATIONAL TEACHER NARRATION:
-   - If Hindi/Hinglish: Speak warmly and naturally ("Dosto, chaliye samajhte hain...", "Screen par dhyan se dekhiye...", "Iska ek bohot simple real-life example lete hain...").
-   - If English: Speak like an engaging tech storyteller—punchy, insightful, and crystal clear.
-   - Synchronize with the board: Actively point the student to the board ("Look at the diagram on the board...", "Notice this connection...", "As you can see in the comparison...").
-4. ORIGINAL SLIDES VS DIAGRAMS:
-   - For each scene, specify "sourceSlide": <1 to {max(1, total_slides)}> to show the corresponding slide from the PDF, OR
-   - Specify a rich visual ("flowchart", "concept-map", "comparison", "bar-chart", "equation", "timeline") to draw on the smartboard!
-5. KNOWLEDGE CHECK: Include an interactive checkpoint question in scene 5 or near the end.
+CORE AI TEACHER RULES:
+1. NEVER READ RAW BULLET POINTS OR HEADERS: Speak like a passionate human professor standing beside a digital smartboard.
+2. SOURCE OF TRUTH: The uploaded material is the factual source of truth for all concepts, formulas, definitions, and data.
+3. PEDAGOGICAL PROGRESSION (Create 5 to 7 rich scenes):
+   - Scene 1: Hook & Core Intuition + Definition Unpack (formal definition + what it actually means in plain English + real-world analogy).
+   - Scene 2: Structural Architecture or Process Flow (how the system/components connect).
+   - Scene 3: Mathematical Formulation / Derivation (if applicable) OR Algorithm Step-by-Step State Trace.
+   - Scene 4: Dynamic Graph / Empirical Curve (plot axes, curve type, threshold, and trend).
+   - Scene 5: Strategic Comparison Matrix (contrasting approaches, trade-offs, pros & cons).
+   - Scene 6: Interactive Knowledge Checkpoint Quiz.
+4. SYNCHRONIZE WITH THE BOARD: Narration MUST reference the board ("Look at the smartboard...", "Notice the curve rising...", "In Step 2 of our array...", "Observe this component highlighted in cyan...").
+5. VISUAL BEATS: For each scene, include 3 'visualBeats' (fractions 0.35, 0.70, 1.0) defining which element is highlighted and whether the teacher pose is 'explaining', 'pointing', or 'checkpoint'.
+
+Supported Visual Types:
+- "definition-unpack": {{"term": "...", "formalDefinition": "...", "plainMeaning": "...", "analogy": "...", "keyMechanisms": ["..."]}}
+- "dynamic-graph": {{"xAxis": "...", "yAxis": "...", "curveType": "sigmoid|loss|exponential|linear|bell", "thresholdLabel": "...", "thresholdValue": 0.8}}
+- "algorithm-trace": {{"algorithmName": "...", "timeComplexity": "...", "steps": [{{"step": 1, "label": "...", "action": "...", "active": 0}}]}}
+- "formula-derivation": {{"formula": "LaTeX", "variables": [{{"symbol": "x", "name": "Feature", "meaning": "Input value"}}]}}
+- "comparison-matrix": {{"columns": ["Method A", "Method B"], "rows": [{{"criterion": "Speed", "valA": "Slow", "valB": "Fast", "highlight": "B"}}]}}
+- "pdf-diagram-walkthrough": {{"diagramTitle": "Architecture", "regions": [{{"id": "r1", "label": "Input Stage", "box": [0.05, 0.2, 0.35, 0.8], "beat": 1, "explanation": "..."}}]}}
+- "concept-map": {{"nodes": [{{"id": "1", "label": "..."}}], "edges": [{{"from": "1", "to": "2"}}]}}
+- "checkpoint": {{"question": "...", "options": ["..."], "answerIndex": 0}}
 
 Return ONLY valid JSON:
 {{
@@ -389,30 +532,25 @@ Return ONLY valid JSON:
   "scenes": [
     {{
       "sceneNumber": 1,
-      "sourceSlide": 1,
-      "slideType": "standard",
+      "slideType": "definition-unpack",
       "title": "Clear Punchy Title",
-      "narration": "Charismatic, conversational lecture narration explaining this step in detail.",
-      "keyPoints": ["Takeaway 1 (concise)", "Takeaway 2 (concise)", "Takeaway 3 (concise)"],
+      "narration": "Natural, spoken teacher lecture with board references.",
+      "keyPoints": ["Takeaway 1", "Takeaway 2", "Takeaway 3"],
       "visual": {{
-        "type": "flowchart|concept-map|comparison|line-chart|bar-chart|equation|slide|none",
-        "title": "Diagram Title",
-        "data": {{
-          "nodes": [{{"id": "1", "label": "Short label"}}, {{"id": "2", "label": "Short label"}}],
-          "edges": [{{"from": "1", "to": "2"}}],
-          "columns": ["Method A", "Method B"],
-          "rows": [["Advantage", "Tradeoff"]],
-          "labels": ["Item 1", "Item 2", "Item 3"],
-          "values": [25, 45, 80],
-          "equation": "LaTeX formula if relevant",
-          "steps": ["Step 1", "Step 2", "Step 3"]
-        }}
+        "type": "definition-unpack|dynamic-graph|algorithm-trace|formula-derivation|comparison-matrix|pdf-diagram-walkthrough|concept-map|checkpoint",
+        "title": "Smartboard Card Title",
+        "data": {{ ... }}
       }},
+      "visualBeats": [
+        {{"beat": 1, "fraction": 0.35, "focus": "part1", "teacherPose": "explaining"}},
+        {{"beat": 2, "fraction": 0.70, "focus": "part2", "teacherPose": "pointing"}},
+        {{"beat": 3, "fraction": 1.00, "focus": "part3", "teacherPose": "pointing"}}
+      ],
       "quiz": {{
-        "question": "Engaging checkpoint question?",
+        "question": "Only if slideType is checkpoint",
         "options": ["Correct option", "Distractor 1", "Distractor 2", "Distractor 3"],
         "answerIndex": 0,
-        "explanation": "Why this is correct."
+        "explanation": "Why correct"
       }}
     }}
   ]
@@ -433,7 +571,12 @@ SOURCE STUDY MATERIAL:
             scene.setdefault("title", f"Concept {i + 1}")
             scene.setdefault("narration", "")
             scene.setdefault("keyPoints", [])
-            scene.setdefault("visual", {"type": "none", "data": {}})
+            scene.setdefault("visual", {"type": "definition-unpack" if i == 0 else "concept-map", "data": {}})
+            scene.setdefault("visualBeats", [
+                {"beat": 1, "fraction": 0.35, "focus": "intro", "teacherPose": "explaining"},
+                {"beat": 2, "fraction": 0.70, "focus": "core", "teacherPose": "pointing"},
+                {"beat": 3, "fraction": 1.00, "focus": "takeaway", "teacherPose": "pointing"}
+            ])
         return scenes
     except Exception as e:
         print(f"[script_gen] AI generation failed ({e}), using grounded structured fallback.")

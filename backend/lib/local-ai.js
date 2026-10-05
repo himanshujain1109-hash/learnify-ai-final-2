@@ -27,15 +27,15 @@ const TIMEOUT_MS = Number(process.env.LOCAL_LLM_TIMEOUT_MS || 60000);
 async function callGemini(prompt, isJson = true) {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   if (!apiKey) return null;
-  const preferredModel = process.env.GEMINI_MODEL;
+  const preferredModel = (process.env.GEMINI_MODEL || "").trim();
   const candidateModels = [
-    ...(preferredModel ? [preferredModel] : []),
-    "gemini-3.6-flash",
-    "gemini-flash-latest",
-    "gemini-3-flash-preview",
-    "gemini-3.1-flash-lite-preview",
-    "gemini-pro-latest",
-    "gemini-flash-lite-latest"
+    ...new Set(
+      [
+        preferredModel,
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+      ].filter(Boolean)
+    ),
   ];
 
   let lastError = null;
@@ -53,8 +53,9 @@ async function callGemini(prompt, isJson = true) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: genConfig
-          })
+            generationConfig: genConfig,
+          }),
+          signal: AbortSignal.timeout(60000),
         });
         if (res.ok) {
           const data = await res.json();
@@ -62,7 +63,9 @@ async function callGemini(prompt, isJson = true) {
           if (text) return text.trim();
         } else {
           const errText = await res.text().catch(() => "");
-          lastError = new Error(`Gemini (${model} ${ver}) failed (${res.status}): ${errText.slice(0, 200)}`);
+          lastError = new Error(
+            `Gemini (${model} ${ver}) failed (${res.status}): ${errText.slice(0, 200)}`
+          );
         }
       } catch (err) {
         lastError = err;

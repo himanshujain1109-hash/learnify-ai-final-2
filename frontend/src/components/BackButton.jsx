@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
 
 export default function BackButton({ to, label = "Back", style = {} }) {
   const navigate = useNavigate();
@@ -12,27 +14,34 @@ export default function BackButton({ to, label = "Back", style = {} }) {
   };
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={handleBack}
-      className="btn-back-nav"
-      style={style}
+      whileHover={{ x: -3 }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "8px 16px",
+        marginBottom: "22px",
+        borderRadius: "12px",
+        fontSize: "0.9rem",
+        fontWeight: 600,
+        fontFamily: "inherit",
+        color: "#5f5b72",
+        background: "rgba(255, 255, 255, 0.8)",
+        border: "1px solid rgba(220, 215, 235, 0.8)",
+        cursor: "pointer",
+        backdropFilter: "blur(10px)",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.03)",
+        ...style,
+      }}
       title="Go back"
     >
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <line x1="19" y1="12" x2="5" y2="12"></line>
-        <polyline points="12 19 5 12 12 5"></polyline>
-      </svg>
+      <ArrowLeft size={16} color="var(--purple)" />
       <span>{label}</span>
-    </button>
+    </motion.button>
   );
 }

@@ -161,6 +161,66 @@ export async function retrieveTeachingContextSemantic(documentId, text, question
   return retrieveTeachingContext(text, question);
 }
 
+export function classifyIntentPrompt(question) {
+  return `Classify the following user question into one of these categories:
+- math: The question involves solving equations, calculus, algebra, geometry, probability, or explicit numerical calculation.
+- science: The question is about physics, chemistry, biology, or natural sciences.
+- cs: The question is about algorithms, data structures, programming, or computer science concepts.
+- rag: The question explicitly asks about "the uploaded document", "the pdf", "my notes", or requires reading the provided text.
+- general: General academic questions that don't fit the above.
+
+Question: "${question}"
+
+Respond with ONLY ONE word from the categories above in lowercase.`;
+}
+
+export function buildMathTutorPrompt({ question, solverResult }) {
+  let mathContext = "";
+  if (solverResult && solverResult.success) {
+    mathContext = `A reliable mathematical computation engine has already solved the core of this problem. 
+COMPUTATIONAL RESULT:
+Final Answer: ${solverResult.result}
+Steps taken:
+${solverResult.steps.join("\n")}
+
+Your job is NOT to re-calculate the answer. Your job is to TEACH the student how to get to this answer step-by-step in a friendly way, using the computed result as the absolute truth.`;
+  }
+
+  return `You are Learnify, a rigorous, engaging college math teacher. Teach the student step-by-step.
+
+Student request: ${question}
+
+${mathContext}
+
+Return a complete lesson as JSON with exactly this high-level shape:
+{
+  "title": "lesson title",
+  "overview": "2-4 sentence overview",
+  "learningObjectives": ["what the student will be able to do"],
+  "sections": [
+    {
+      "title": "concept title",
+      "type": "concept|example",
+      "whatItIs": "formal definition",
+      "whyItMatters": "why we use it",
+      "simpleExplanation": "simple intuition",
+      "explanation": "teacher-style detailed explanation",
+      "example": "concrete worked example",
+      "stepByStep": ["ordered steps to solve"],
+      "visual": {
+        "type": "function_plot|none",
+        "title": "visual title",
+        "data": { "equation": "y=x^2" }
+      },
+      "formulas": ["formula"],
+      "commonMistakes": ["mistakes students make"]
+    }
+  ]
+}
+
+For math questions, strongly prefer returning a "visual" of type "function_plot" if it involves graphing a function. Set "equation" to the right hand side of y=...`;
+}
+
 export function buildTutorPrompt({ documentTitle, question, context }) {
   const sourceText = context.chunks
     .map(

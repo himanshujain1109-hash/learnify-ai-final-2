@@ -1,7 +1,7 @@
 import connectDB from "../../backend/lib/db.js";
 import Document from "../../backend/models/Document.js";
 import { requireAuth } from "../../backend/lib/auth.js";
-import { generateJSON } from "../../backend/lib/local-ai.js";
+import { generateJSON, generateText } from "../../backend/lib/local-ai.js";
 import {
   createOfflineTutorLesson,
   offlineFallbackEnabled,
@@ -10,8 +10,40 @@ import {
   buildTutorPrompt,
   normalizeTutorLesson,
   retrieveTeachingContext,
+  classifyIntentPrompt,
+  buildMathTutorPrompt
 } from "../../backend/lib/teaching-engine.js";
 import { sendError, setCors } from "../_utils.js";
+
+// Call the Python math solver
+async function callMathSolver(expression) {
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/math/solve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "solve_equation", expression })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("Math solver failed:", err);
+    return { success: false };
+  }
+}
+
+// Call the Python visual engine
+async function callVisualEngine(spec) {
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/visual/render", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(spec)
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("Visual engine failed:", err);
+    return { success: false };
+  }
+}
 
 export default async function handler(req, res) {
   setCors(res, req);
@@ -25,36 +57,82 @@ export default async function handler(req, res) {
     const { documentId, question } = req.body || {};
     if (!question?.trim()) return res.status(400).json({ message: "Question is required" });
 
-    const doc = await Document.findOne({ _id: documentId, userId });
-    if (!doc) return res.status(404).json({ message: "Material not found" });
+    // 1. CLASSIFY INTENT
+    const intentRaw = await generateText(classifyIntentPrompt(question));
+    const intent = intentRaw ? intentRaw.toLowerCase().trim() : "general";
+    console.log(`[Pipeline] Question classified as: ${intent}`);
 
-    const context = retrieveTeachingContext(doc.extractedText, question);
     let lesson;
     let offline = false;
+    let context = { sources: [] };
+    
+    // Fetch document if provided (required for RAG)
+    let doc = null;
+    if (documentId) {
+      doc = await Document.findOne({ _id: documentId, userId });
+      if (doc) {
+        context = retrieveTeachingContext(doc.extractedText, question);
+      }
+    }
 
     try {
-      const rawLesson = await generateJSON(
-        buildTutorPrompt({
-          documentTitle: doc.title || doc.originalFileName,
+      let prompt = "";
+      
+      // 2. ROUTING
+      if (intent === "math") {
+        // Attempt to solve using computational layer first
+        console.log("[Pipeline] Using Math Solver...");
+        const solverResult = await callMathSolver(question);
+        
+        prompt = buildMathTutorPrompt({ question, solverResult });
+      } else {
+        // Default / RAG / General flow
+        prompt = buildTutorPrompt({
+          documentTitle: doc ? (doc.title || doc.originalFileName) : "General Knowledge",
           question: question.trim(),
           context,
-        })
-      );
+        });
+      }
+
+      // 3. GENERATION
+      const rawLesson = await generateJSON(prompt);
+      
+      // 4. VISUAL ENGINE (Post-processing)
+      // Check if the LLM requested a specialized visual plot
+      if (rawLesson.sections) {
+        for (let section of rawLesson.sections) {
+          if (section.visual && section.visual.type === "function_plot" && section.visual.data) {
+            console.log("[Pipeline] Generating plot for:", section.visual.data.equation);
+            const visualRes = await callVisualEngine(section.visual.data);
+            if (visualRes.success && visualRes.svg) {
+              section.visual.type = "svg";
+              section.visual.data = { svg: visualRes.svg };
+            }
+          }
+        }
+      }
+
       lesson = normalizeTutorLesson(rawLesson, {
         question: question.trim(),
         sources: context.sources,
       });
       if (!lesson.sections.length) throw new Error("The model returned no teachable sections.");
+      
     } catch (error) {
       console.warn("[Tutor] Primary lesson generation failed, using structured fallback:", error.message);
       offline = true;
-      lesson = createOfflineTutorLesson(question, doc.extractedText, context.sources);
+      if (doc) {
+        lesson = createOfflineTutorLesson(question, doc.extractedText, context.sources);
+      } else {
+        return res.status(500).json({ message: "Failed to generate lesson and no document available for fallback." });
+      }
     }
 
     return res.json({
       answer: lesson,
       lesson,
       retrievedSections: context.sources,
+      intent, // Return intent for debugging/evaluation
       ...(offline
         ? {
             warning:

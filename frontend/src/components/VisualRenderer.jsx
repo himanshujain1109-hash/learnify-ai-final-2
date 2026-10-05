@@ -172,6 +172,10 @@ export default function VisualRenderer({ visual }) {
     case "timeline":
       content = <ConceptMap data={data} />;
       break;
+    case "svg":
+      // The python visual engine generates raw SVGs for mathematical accuracy
+      content = <div className="visual-svg" dangerouslySetInnerHTML={{ __html: data.svg }} />;
+      break;
     default:
       content = <Flowchart data={data} />;
   }
